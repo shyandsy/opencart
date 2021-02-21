@@ -1,16 +1,19 @@
 <?php
-namespace DB;
+namespace Opencart\System\Library\DB;
 final class PgSQL {
 	private $connection;
 
 	public function __construct($hostname, $username, $password, $database, $port = '5432') {
-		$this->connection = @pg_connect('hostname=' . $hostname . ' port=' . $port .  ' username=' . $username . ' password='	. $password . ' database=' . $database);
-
-		if (!$this->connection) {
+		try {
+			$pg = @pg_connect('hostname=' . $hostname . ' port=' . $port .  ' username=' . $username . ' password='	. $password . ' database=' . $database);
+		} catch (\Exception $e) {
 			throw new \Exception('Error: Could not make a database link using ' . $username . '@' . $hostname);
 		}
 
-		pg_query($this->connection, "SET CLIENT_ENCODING TO 'UTF8'");
+		if ($pg) {
+			$this->connection = $pg;
+			pg_query($this->connection, "SET CLIENT_ENCODING TO 'UTF8'");
+		}
 	}
 
 	public function query($sql) {
@@ -20,7 +23,7 @@ final class PgSQL {
 			if (is_resource($resource)) {
 				$i = 0;
 
-				$data = array();
+				$data = [];
 
 				while ($result = pg_fetch_assoc($resource)) {
 					$data[$i] = $result;
@@ -31,7 +34,7 @@ final class PgSQL {
 				pg_free_result($resource);
 
 				$query = new \stdClass();
-				$query->row = isset($data[0]) ? $data[0] : array();
+				$query->row = isset($data[0]) ? $data[0] : [];
 				$query->rows = $data;
 				$query->num_rows = $i;
 
@@ -69,8 +72,10 @@ final class PgSQL {
 	}
 
 	public function __destruct() {
-		if ($this->isConnected()) {
+		if ($this->connection) {
 			pg_close($this->connection);
+
+			$this->connection = '';
 		}
 	}
 }

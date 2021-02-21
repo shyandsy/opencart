@@ -1,5 +1,6 @@
 <?php
-class ControllerInformationGdpr extends Controller {
+namespace Opencart\Application\Controller\Information;
+class Gdpr extends \Opencart\System\Engine\Controller {
 	public function index() {
 		$this->load->model('catalog/information');
 
@@ -10,17 +11,17 @@ class ControllerInformationGdpr extends Controller {
 
 			$this->document->setTitle($this->language->get('heading_title'));
 
-			$data['breadcrumbs'] = array();
+			$data['breadcrumbs'] = [];
 
-			$data['breadcrumbs'][] = array(
+			$data['breadcrumbs'][] = [
 				'text' => $this->language->get('text_home'),
 				'href' => $this->url->link('common/home', 'language=' . $this->config->get('config_language'))
-			);
+			];
 
-			$data['breadcrumbs'][] = array(
+			$data['breadcrumbs'][] = [
 				'text' => $this->language->get('heading_title'),
 				'href' => $this->url->link('information/gdpr', 'language=' . $this->config->get('config_language'))
-			);
+			];
 
 			$data['title'] = $information_info['title'];
 
@@ -41,14 +42,37 @@ class ControllerInformationGdpr extends Controller {
 
 			$this->response->setOutput($this->load->view('information/gdpr', $data));
 		} else {
-			return new Action('error/not_found');
+			return new \Opencart\System\Engine\Action('error/not_found');
 		}
 	}
 
+	/*
+	 *  Action Statuses
+	 *
+	 *	EXPORT
+	 *
+	 *  unverified = 0
+	 *	pending    = 1
+	 *	complete   = 3
+	 *
+	 *	REMOVE
+	 *
+	 *  unverified = 0
+	 *	pending    = 1
+	 *	processing = 2
+	 *	delete     = 3
+	 *
+	 *	DENY
+	 *
+	 *  unverified = 0
+	 *	pending    = 1
+	 *	processing = 2
+	 *	denied     = -1
+	*/
 	public function action() {
 		$this->load->language('information/gdpr');
 
-		$json = array();
+		$json = [];
 
 		if (isset($this->request->post['email'])) {
 			$email = $this->request->post['email'];
@@ -68,10 +92,10 @@ class ControllerInformationGdpr extends Controller {
 		}
 
 		// Validate Action
-		$allowed = array(
+		$allowed = [
 			'export',
 			'remove'
-		);
+		];
 
 		if (!in_array($action, $allowed)) {
 			$json['error']['action'] = $this->language->get('error_action');
@@ -87,7 +111,7 @@ class ControllerInformationGdpr extends Controller {
 
 			foreach ($results as $result) {
 				if ($result['action'] == $action) {
-					//$status = false;
+					$status = false;
 
 					break;
 				}
@@ -113,33 +137,39 @@ class ControllerInformationGdpr extends Controller {
 
 		$this->load->model('account/gdpr');
 
-		//$gdpr_info = $this->model_account_gdpr->getGdprByCode($code);
+		$gdpr_info = $this->model_account_gdpr->getGdprByCode($code);
 
-		//if ($gdpr_info) {
-			$this->load->language('information/gdpr');
+		if ($gdpr_info) {
+			$this->load->language('information/gdpr_success');
 
 			$this->document->setTitle($this->language->get('heading_title'));
 
-			$data['breadcrumbs'] = array();
+			$data['breadcrumbs'] = [];
 
-			$data['breadcrumbs'][] = array(
+			$data['breadcrumbs'][] = [
 				'text' => $this->language->get('text_home'),
 				'href' => $this->url->link('common/home', 'language=' . $this->config->get('config_language'))
-			);
+			];
 
-			$data['breadcrumbs'][] = array(
-				'text' => $this->language->get('heading_title'),
+			$data['breadcrumbs'][] = [
+				'text' => $this->language->get('text_account'),
 				'href' => $this->url->link('information/gdpr', 'language=' . $this->config->get('config_language'))
-			);
+			];
 
-			$data['breadcrumbs'][] = array(
+			$data['breadcrumbs'][] = [
 				'text' => $this->language->get('heading_title'),
-				'href' => $this->url->link('information/gdpr/success', 'language=' . $this->config->get('config_language'))
-			);
+				'href' => $this->url->link('information/gdpr|success', 'language=' . $this->config->get('config_language'))
+			];
 
-			$this->model_account_gdpr->editStatus($code, 1);
+			if ($gdpr_info['status'] == 0) {
+				$this->model_account_gdpr->editStatus($code, 1);
+			}
 
-			$data['text_message'] = $this->language->get('text_message');
+			if ($gdpr_info['action'] == 'export') {
+				$data['text_message'] = $this->language->get('text_export');
+			} else {
+				$data['text_message'] = sprintf($this->language->get('text_remove'), $this->config->get('config_gdpr_limit'));
+			}
 
 			$data['column_left'] = $this->load->controller('common/column_left');
 			$data['column_right'] = $this->load->controller('common/column_right');
@@ -149,8 +179,8 @@ class ControllerInformationGdpr extends Controller {
 			$data['header'] = $this->load->controller('common/header');
 
 			$this->response->setOutput($this->load->view('common/success', $data));
-		//} else {
-		//	return new Action('error/not_found');
-		//}
+		} else {
+			return new \Opencart\System\Engine\Action('error/not_found');
+		}
 	}
 }

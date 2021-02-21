@@ -1,22 +1,44 @@
 <?php
-class ControllerCommonCookie extends Controller {
+namespace Opencart\Application\Controller\Common;
+class Cookie extends \Opencart\System\Engine\Controller {
 	public function index() {
 		if ($this->config->get('config_cookie_id') && !isset($this->request->cookie['policy'])) {
-			$this->load->language('common/cookie');
+			$this->load->model('catalog/information');
 
-			$data['text_cookie'] = sprintf($this->language->get('text_cookie'), $this->url->link('information/information/info', 'language=' . $this->config->get('config_language') . '&information_id=' . $this->config->get('config_cookie_id')));
+			$information_info = $this->model_catalog_information->getInformation($this->config->get('config_cookie_id'));
 
-			return $this->load->view('common/cookie', $data);
+			if ($information_info) {
+				$this->load->language('common/cookie');
+
+				$data['text_cookie'] = sprintf($this->language->get('text_cookie'), $this->url->link('information/information|info', 'language=' . $this->config->get('config_language') . '&information_id=' . $information_info['information_id']));
+
+				$data['agree'] = $this->url->link('common/cookie|confirm', 'language=' . $this->config->get('config_language') . '&agree=1');
+				$data['disagree'] = $this->url->link('common/cookie|confirm', 'language=' . $this->config->get('config_language') . '&agree=0');
+
+				return $this->load->view('common/cookie', $data);
+			}
 		}
 	}
 
-	public function agree() {
-		$this->load->language('common/cookie');
+	public function confirm() {
+		$json = [];
 
-		$json = array();
+		if ($this->config->get('config_cookie_id') && !isset($this->request->cookie['policy'])) {
+			$this->load->language('common/cookie');
 
-		if (!isset($this->cookie['policy'])) {
-			setcookie('policy', time(), strtotime('+10 years'), ini_get('session.cookie_path'), ini_get('session.cookie_domain'));
+			if (isset($this->request->get['agree'])) {
+				$agree = (int)$this->request->get['agree'];
+			} else {
+				$agree = 0;
+			}
+
+			$option = [
+				'expires'  => time() + 60 * 60 * 24 * 365,
+				'path'     => !empty($_SERVER['PHP_SELF']) ? dirname($_SERVER['PHP_SELF']) . '/' : '',
+				'SameSite' => 'Strict'
+			];
+
+			setcookie('policy', $agree, $option);
 
 			$json['success'] = $this->language->get('text_success');
 		}

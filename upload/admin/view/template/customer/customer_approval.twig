@@ -28,13 +28,13 @@
           <div class="card-header"><i class="fas fa-filter"></i> {{ text_filter }}</div>
           <div class="card-body">
             <div class="form-group">
-              <label class="col-form-label" for="input-customer">{{ entry_customer }}</label> <input type="text" name="filter_customer" value="" placeholder="{{ entry_customer }}" id="input-customer" class="form-control"/>
+              <label class="col-form-label">{{ entry_customer }}</label> <input type="text" name="filter_customer" value="" placeholder="{{ entry_customer }}" id="input-customer" class="form-control"/>
             </div>
             <div class="form-group">
-              <label class="col-form-label" for="input-email">{{ entry_email }}</label> <input type="text" name="filter_email" value="" placeholder="{{ entry_email }}" id="input-email" class="form-control"/>
+              <label class="col-form-label">{{ entry_email }}</label> <input type="text" name="filter_email" value="" placeholder="{{ entry_email }}" id="input-email" class="form-control"/>
             </div>
             <div class="form-group">
-              <label class="col-form-label" for="input-customer-group">{{ entry_customer_group }}</label> <select name="filter_customer_group_id" id="input-customer-group" class="form-control">
+              <label for="input-customer-group" class="col-form-label">{{ entry_customer_group }}</label> <select name="filter_customer_group_id" id="input-customer-group" class="form-control">
                 <option value=""></option>
                 {% for customer_group in customer_groups %}
                   <option value="{{ customer_group.customer_group_id }}">{{ customer_group.name }}</option>
@@ -42,14 +42,14 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="col-form-label" for="input-type">{{ entry_type }}</label> <select name="filter_type" id="input-type" class="form-control">
+              <label for="input-type" class="col-form-label">{{ entry_type }}</label> <select name="filter_type" id="input-type" class="form-control">
                 <option value=""></option>
                 <option value="customer">{{ text_customer }}</option>
                 <option value="affiliate">{{ text_affiliate }}</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="col-form-label" for="input-date-added">{{ entry_date_added }}</label>
+              <label for="input-date-added" class="col-form-label">{{ entry_date_added }}</label>
               <div class="input-group date">
                 <input type="text" name="filter_date_added" value="" placeholder="{{ entry_date_added }}" id="input-date-added" class="form-control"/>
                 <div class="input-group-append">
@@ -81,7 +81,7 @@ $('#customer-approval').on('click', '.pagination a', function(e) {
 	$('#customer-approval').load(this.href);
 });
 
-$('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}');
+$('#customer-approval').load('index.php?route=customer/customer_approval|customer_approval&user_token={{ user_token }}');
 
 $('#customer-approval').on('click', '.btn-success, .btn-danger', function(e) {
 	e.preventDefault();
@@ -105,7 +105,7 @@ $('#customer-approval').on('click', '.btn-success, .btn-danger', function(e) {
 			}
 
 			if (json['success']) {
-				$('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}');
+				$('#customer-approval').load('index.php?route=customer/customer_approval|customer_approval&user_token={{ user_token }}');
 
 				$('#customer-approval').before('<div class="alert alert-success alert-dismissible"><i class="fas fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 			}
@@ -149,14 +149,14 @@ $('#button-filter').on('click', function() {
 		url += '&filter_date_added=' + encodeURIComponent(filter_date_added);
 	}
 
-	$('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}' + url);
+	$('#customer-approval').load('index.php?route=customer/customer_approval|customer_approval&user_token={{ user_token }}' + url);
 });
 //--></script>
 <script type="text/javascript"><!--
 $('input[name=\'filter_name\']').autocomplete({
 	'source': function(request, response) {
 		$.ajax({
-			url: 'index.php?route=customer/customer/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+			url: 'index.php?route=customer/customer|autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
 			dataType: 'json',
 			success: function(json) {
 				response($.map(json, function(item) {
@@ -176,7 +176,7 @@ $('input[name=\'filter_name\']').autocomplete({
 $('input[name=\'filter_email\']').autocomplete({
 	'source': function(request, response) {
 		$.ajax({
-			url: 'index.php?route=customer/customer/autocomplete&user_token={{ user_token }}&filter_email=' + encodeURIComponent(request),
+			url: 'index.php?route=customer/customer|autocomplete&user_token={{ user_token }}&filter_email=' + encodeURIComponent(request),
 			dataType: 'json',
 			success: function(json) {
 				response($.map(json, function(item) {

@@ -1,6 +1,7 @@
 <?php
-class ControllerAccountForgotten extends Controller {
-	private $error = array();
+namespace Opencart\Application\Controller\Account;
+class Forgotten extends \Opencart\System\Engine\Controller {
+	private $error = [];
 
 	public function index() {
 		if ($this->customer->isLogged()) {
@@ -25,22 +26,22 @@ class ControllerAccountForgotten extends Controller {
 			$this->response->redirect($this->url->link('account/login', 'language=' . $this->config->get('config_language')));
 		}
 
-		$data['breadcrumbs'] = array();
+		$data['breadcrumbs'] = [];
 
-		$data['breadcrumbs'][] = array(
+		$data['breadcrumbs'][] = [
 			'text' => $this->language->get('text_home'),
 			'href' => $this->url->link('common/home', 'language=' . $this->config->get('config_language'))
-		);
+		];
 
-		$data['breadcrumbs'][] = array(
+		$data['breadcrumbs'][] = [
 			'text' => $this->language->get('text_account'),
 			'href' => $this->url->link('account/account', 'language=' . $this->config->get('config_language'))
-		);
+		];
 
-		$data['breadcrumbs'][] = array(
+		$data['breadcrumbs'][] = [
 			'text' => $this->language->get('text_forgotten'),
 			'href' => $this->url->link('account/forgotten', 'language=' . $this->config->get('config_language'))
-		);
+		];
 
 		if (isset($this->error['warning'])) {
 			$data['error_warning'] = $this->error['warning'];
@@ -69,7 +70,7 @@ class ControllerAccountForgotten extends Controller {
 	}
 
 	protected function validate() {
-		if ((utf8_strlen($this->request->post['email']) > 96) || !filter_var($this->request->post['email'], FILTER_VALIDATE_EMAIL)) {
+		if (empty($this->request->post['email']) || (utf8_strlen($this->request->post['email']) > 96) || !filter_var($this->request->post['email'], FILTER_VALIDATE_EMAIL)) {
 			$this->error['warning'] = $this->language->get('error_email');
 		}
 

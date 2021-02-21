@@ -1,23 +1,52 @@
 <?php
-namespace Template;
-final class Twig {
-	private $filters = array();
-	private $data = array();
+namespace Opencart\System\Library\Template;
+class Twig {
+	protected $root;
+	protected $loader;
+	protected $directory;
+	protected $path = [];
 
-	public function addFilter($key, $value) {
-		$this->filters[$key] = $value;
+	/**
+	 * Constructor
+	 *
+	 * @param    string $adaptor
+	 *
+	 */
+	public function __construct() {
+		// Unfortunately we have to set the web root directory as the base since Twig confuses which template cache to use.
+		$this->root = substr(DIR_OPENCART, 0, -1);
+
+		// We have to add the C directory as the base directory because twig can only accept the fist namespace/
+		// rather than a multiple namespace system which took me less than a minute to write. If symphony is like
+		// this then I have nopt idea why people use the framework.
+		$this->loader = new \Twig\Loader\FilesystemLoader('/', $this->root);
 	}
 
-	public function set($key, $value) {
-		$this->data[$key] = $value;
+	/**
+	 * addPath
+	 *
+	 * @param    string $namespace
+	 * @param    string $directory
+	 */
+	public function addPath($namespace, $directory = '') {
+		if (!$directory) {
+			$this->directory = $namespace;
+		} else {
+			$this->path[$namespace] = $directory;
+		}
 	}
 
-	public function render($template, $cache = true) {
-		// Initialize Twig environment
-		$config = array(
-			'autoescape' => false,
-			'debug'      => false
-		);
+	/**
+	 * Render
+	 *
+	 * @param	string	$filename
+	 * @param	array	$data
+	 * @param	string	$code
+	 *
+	 * @return	array
+	 */
+	public function render($filename, $data = [], $code = '') {
+		$file = $this->directory . $filename . '.twig';
 
 		/*
 		 * FYI all the Twig lovers out there!
@@ -29,69 +58,49 @@ final class Twig {
 		 * The fact that this system cache is just compiling php into more php code instead of html is a disgrace!
 		 */
 
-		// 1. Generate namespace for filters used to product the output
-		$namespace = preg_replace('/[^0-9a-zA-Z_]/', '_', implode('_', array_keys($this->filters)));
+		$path = '';
 
-		$loader = new \Twig_Loader_Filesystem(DIR_TEMPLATE);
+		$namespace = '';
 
-		// 2. Initiate Twig Environment
-		$twig = new \Twig_Environment($loader, $config);
+		$parts = explode('/', $filename);
 
-		// 3. Create an anonymous cache class as twig will not all us to generate a key based on custom keys
-		if ($cache) {
-			$cache = new class(DIR_CACHE, $options = 0, $namespace) extends \Twig_Cache_Filesystem {
-				private $directory;
-				private $options;
-
-				public function __construct($directory, $options = 0, $namespace) {
-					$this->directory = rtrim($directory, '\/') . '/';
-					$this->options = $options;
-					$this->namespace = $namespace;
-				}
-
-				public function generateKey($name, $className) {
-					$hash = hash('sha256', $name . $className . $this->namespace);
-
-					return $this->directory . $hash[0] . $hash[1] . '/' . $hash . '.php';
-				}
-			};
-
-			$twig->setCache($cache);
-		}
-
-		// 4. Get template class name
-		$template_class_name = $twig->getTemplateClass($template . '.twig');
-
-		// 5. Get cache file path
-		$cache_file = $twig->getCache(false)->generateKey(DIR_TEMPLATE . $template . '.twig', $template_class_name);
-
-		try {
-			// 6. Check if cached file exists with modifications if not we create one
-			if (!is_file($cache_file)) {
-				// 7. Get the source code using the source
-				$source = $twig->getLoader()->getSourceContext($template . '.twig');
-
-				$code = $source->getCode();
-
-				// 8. Run the code through the filters
-				foreach ($this->filters as $key => $filter) {
-					$filter->callback($code);
-				}
-
-				// 9. Compile the source
-				$output = $twig->compileSource(new \Twig_Source($code, $source->getName(), $source->getPath()));
-
-				// 10. Write the output to a cache file
-				$twig->getCache(false)->write($cache_file, $output);
+		foreach ($parts as $part) {
+			if (!$namespace) {
+				$namespace .= $part;
+			} else {
+				$namespace .= '/' . $part;
 			}
 
-			// 11. Load the cached file into array of loaded templates
-			$twig->getCache(false)->load($cache_file);
+			if (isset($this->path[$namespace])) {
+				$file = $this->path[$namespace] . substr($filename, strlen($namespace) + 1) . '.twig';
+			}
+		}
 
-			return $twig->render($template . '.twig', $this->data);
+		// We have to remove the root web directory.
+		$file = substr($file, strlen($this->root) + 1);
+
+		if ($code) {
+			// render from modified template code
+			$loader = new \Twig\Loader\ArrayLoader([$file => $code]);
+		} else {
+			$loader = $this->loader;
+		}
+
+		try {
+			// Initialize Twig environment
+			$config = [
+				'charset'     => 'utf-8',
+				'autoescape'  => false,
+				'debug'       => false,
+				'auto_reload' => true,
+				'cache'       => DIR_CACHE . 'template/'
+			];
+
+			$twig = new \Twig\Environment($loader, $config);
+
+			return $twig->render($file, $data);
 		} catch (Twig_Error_Syntax $e) {
-			trigger_error('Error: Could not load template ' . $template . '!');
-			exit();
+			throw \Exception('Error: Could not load template ' . $filename . '!');
 		}
 	}
 }

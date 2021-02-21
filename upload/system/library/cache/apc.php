@@ -1,5 +1,5 @@
 <?php
-namespace Cache;
+namespace Opencart\System\Library\Cache;
 class APC {
 	private $expire;
 	private $active = false;
@@ -13,8 +13,12 @@ class APC {
 		return $this->active ? apc_fetch(CACHE_PREFIX . $key) : false;
 	}
 
-	public function set($key, $value) {
-		return $this->active ? apc_store(CACHE_PREFIX . $key, $value, $this->expire) : false;
+	public function set($key, $value, $expire = '') {
+		if (!$expire) {
+			$expire = $this->expire;
+		}
+
+		return $this->active ? apc_store(CACHE_PREFIX . $key, $value, $expire) : false;
 	}
 
 	public function delete($key) {

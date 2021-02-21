@@ -22,11 +22,13 @@ function getURLVar(key) {
 	}
 }
 
+// On August 17 2021, Internet Explorer 11 (IE11) will no longer be supported by Microsoft's 365 applications and services.
+function isIE() {
+    if (!!window.ActiveXObject || "ActiveXObject" in window) return true;
+}
+
 $(document).ready(function() {
-	//Form Submit for IE Browser
-	$('button[type=\'submit\']').on('click', function() {
-		$('form[id*=\'form-\']').submit();
-	});
+	$('form').trigger('reset');
 
 	// Highlight any found errors
 	$('.invalid-tooltip').each(function() {
@@ -78,21 +80,41 @@ $(document).ready(function() {
 	});
 
 	if (!sessionStorage.getItem('menu')) {
-		$('#menu #dashboard').addClass('active');
+		$('#menu #menu-dashboard').addClass('active');
 	} else {
 		// Sets active and open to selected page in the left column menu.
 		$('#menu a[href=\'' + sessionStorage.getItem('menu') + '\']').parent().addClass('active');
 	}
 
-	$('#menu a[href=\'' + sessionStorage.getItem('menu') + '\']').parents('li > a').removeClass('collapsed');
+	$('#menu a[href=\'' + sessionStorage.getItem('menu') + '\']').parents('li').children('a').removeClass('collapsed');
 
 	$('#menu a[href=\'' + sessionStorage.getItem('menu') + '\']').parents('ul').addClass('show');
 
 	$('#menu a[href=\'' + sessionStorage.getItem('menu') + '\']').parents('li').addClass('active');
+
+	$('#header-notification [data-toggle=\'modal\']').on('click', function(e) {
+		e.preventDefault();
+
+		var element = this;
+
+		$('#modal-notification').remove();
+
+		$.ajax({
+			url: $(element).attr('href'),
+			dataType: 'html',
+			success: function(html) {
+				$('body').append(html);
+
+				$('#modal-notification').modal('show');
+			}
+		});
+	});
 });
 
 // Image Manager
 $(document).on('click', '[data-toggle=\'image\']', function(e) {
+	e.preventDefault();
+
 	var element = this;
 
 	$('#modal-image').remove();
@@ -120,6 +142,36 @@ $(document).on('click', '[data-toggle=\'clear\']', function() {
 	$($(this).attr('data-target')).val('');
 });
 
+// Chain ajax calls.
+class Chain {
+	constructor() {
+		this.start = false;
+		this.data = [];
+	}
+
+	attach(call) {
+		this.data.push(call);
+
+		if (!this.start) {
+			this.execute();
+		}
+	}
+
+	execute() {
+		if (this.data.length) {
+			this.start = true;
+
+			(this.data.shift())().done(function() {
+				chain.execute();
+			});
+		} else {
+			this.start = false;
+		}
+	}
+}
+
+var chain = new Chain();
+
 // Autocomplete
 (function($) {
 	$.fn.autocomplete = function(option) {
@@ -132,7 +184,11 @@ $(document).on('click', '[data-toggle=\'clear\']', function() {
 
 			$.extend(this, option);
 
-			$(this).wrap('<div class="dropdown">');
+			if (!$(this).parent().hasClass('input-group')) {
+				$(this).wrap('<div class="dropdown">');
+			} else {
+				$(this).parent().wrap('<div class="dropdown">');
+			}
 
 			$this.attr('autocomplete', 'off');
 			$this.active = false;
@@ -362,5 +418,4 @@ $(document).on('click', '[data-toggle=\'clear\']', function() {
 		.on('focus.bs.button.data-api blur.bs.button.data-api', '[data-toggle^="button"]', function(e) {
 			$(e.target).closest('.btn').toggleClass('focus', /^focus(in)?$/.test(e.type))
 		})
-
 }(jQuery);
